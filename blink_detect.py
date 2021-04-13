@@ -5,6 +5,8 @@ import dlib
 from scipy.spatial import distance
 import os
 from imutils import face_utils
+#计时函数
+import time
 
 # 计算EAR
 def eye_aspect_ratio(eye):
@@ -14,7 +16,10 @@ def eye_aspect_ratio(eye):
 	C = distance.euclidean(eye[0], eye[3])
 	ear = (A + B) / (2.0 * C)
 	return ear
-	
+
+#开始计时
+time_start = time.time()
+
 pwd = os.getcwd()# 获取当前路径
 model_path = os.path.join(pwd, 'model')# 模型文件夹路径
 shape_detector_path = os.path.join(model_path, 'shape_predictor_68_face_landmarks.dat')# 人脸特征点检测模型路径
@@ -34,6 +39,10 @@ LEFT_EYE_END = 48 - 1
 frame_counter = 0
 blink_counter = 0
 cap = cv2.VideoCapture(1)
+
+#读取次数
+flag = 0
+
 while(1):
 	ret, img = cap.read()
 	
@@ -76,6 +85,7 @@ while(1):
 		cv2.putText(img, "Blinks:{0}".format(blink_counter), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
 		cv2.putText(img, "EAR:{:.2f}".format(ear), (300, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
 
+		flag = flag + 1
 		
 	cv2.imshow("Frame", img)
 
@@ -84,4 +94,13 @@ while(1):
 
 cap.release()
 cv2.destroyAllWindows()
+
+print (flag)
+
+#计时结束
+time_end = time.time()
+total_time = time_end-time_start
+print('totally cost',total_time)
+#帧率
+print ("FPS:",flag/total_time)
 

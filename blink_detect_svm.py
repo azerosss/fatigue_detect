@@ -8,6 +8,13 @@ from imutils import face_utils
 from sklearn import svm
 #from sklearn.externals import joblib
 import joblib
+import pygame
+
+#计时函数
+import time
+
+#开始计时
+time_start = time.time()
 
 VECTOR_SIZE = 3
 def queue_in(queue, data):
@@ -24,7 +31,15 @@ def eye_aspect_ratio(eye):
 	C = distance.euclidean(eye[0], eye[3])
 	ear = (A + B) / (2.0 * C)
 	return ear
-	
+
+def countX(lst, x):
+    count = 0
+    for ele in lst:
+        if (ele == x):
+            count = count + 1
+    return count
+
+
 pwd = os.getcwd()
 model_path = os.path.join(pwd, 'model')
 shape_detector_path = os.path.join(model_path, 'shape_predictor_68_face_landmarks.dat')
@@ -48,6 +63,15 @@ frame_counter = 0
 blink_counter = 0
 ear_vector = []
 cap = cv2.VideoCapture(1)
+
+#读取次数
+flag = 0
+perclos = []
+
+pygame.mixer.init()
+pygame.mixer.music.load("beep.wav")
+
+
 while(1):
 	ret, img = cap.read()
 	
@@ -62,8 +86,11 @@ while(1):
 		rightEye = points[RIGHT_EYE_START:RIGHT_EYE_END + 1]
 		leftEAR = eye_aspect_ratio(leftEye)
 		rightEAR = eye_aspect_ratio(rightEye)
+
+		'''
 		print('leftEAR = {0}'.format(leftEAR))
 		print('rightEAR = {0}'.format(rightEAR))
+		'''
 
 		ear = (leftEAR + rightEAR) / 2.0
 
@@ -87,11 +114,23 @@ while(1):
 					blink_counter += 1
 				frame_counter = 0
 
+			perclos.append(res[0])
+
+		time_tmp = time.time()
+		time_lim = time_tmp - time_start
+		print (time_lim)
+		if (int(time_lim)%10 == 0):
+			if (countX(perclos,0) / len(perclos)) >= 0.2:
+				print('*'*8,int(time_lim),'*'*8)
+				pygame.mixer.music.play()
+			perclos.clear()
+
 		cv2.putText(img, "Blinks:{0}".format(blink_counter), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
 		cv2.putText(img, "EAR:{:.2f}".format(ear), (300, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
 
+		flag = flag + 1
 		
-	cv2.imshow("Frame", img)
+	cv2.imshow("Frame", img)#格式问题
 	
 	if cv2.waitKey(1) & 0xFF == ord("q"):
 		break
@@ -99,3 +138,17 @@ while(1):
 cap.release()
 cv2.destroyAllWindows()
 print ("blink=",blink_counter)
+
+print('-'*60)
+#print (cap.get(5))   #摄像头可能不能用此方法实时显示帧率
+print (flag)
+#计时结束
+time_end = time.time()
+total_time = time_end-time_start
+print('totally cost',total_time)
+#帧率
+print ("FPS:",flag/total_time)
+print (type(res[0]))
+print (perclos)
+print (len(perclos))
+
