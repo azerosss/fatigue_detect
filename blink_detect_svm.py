@@ -10,6 +10,8 @@ from sklearn import svm
 import joblib
 import pygame
 
+import matplotlib.pyplot as plt
+
 #计时函数
 import time
 
@@ -40,6 +42,9 @@ def countX(lst, x):
     return count
 
 
+X = []
+Y = []
+
 pwd = os.getcwd()
 model_path = os.path.join(pwd, 'model')
 shape_detector_path = os.path.join(model_path, 'shape_predictor_68_face_landmarks.dat')
@@ -65,8 +70,10 @@ ear_vector = []
 cap = cv2.VideoCapture(1)
 
 #读取次数
+tag = 0
 flag = 0
 perclos = []
+warn_tag = 0
 
 pygame.mixer.init()
 pygame.mixer.music.load("beep.wav")
@@ -94,6 +101,8 @@ while(1):
 
 		ear = (leftEAR + rightEAR) / 2.0
 
+		Y.append(ear)
+
 		leftEyeHull = cv2.convexHull(leftEye)
 		rightEyeHull = cv2.convexHull(rightEye)
 		cv2.drawContours(img, [leftEyeHull], -1, (0, 255, 0), 1)
@@ -119,16 +128,33 @@ while(1):
 		time_tmp = time.time()
 		time_lim = time_tmp - time_start
 		print (time_lim)
+		'''
+		？浮点数取整数部分？
+		'''
 		if (int(time_lim)%10 == 0):
-			if (countX(perclos,0) / len(perclos)) >= 0.2:
+			tag = 1
+			if (countX(perclos,1) / len(perclos)) >= 0.2:
 				print('*'*8,int(time_lim),'*'*8)
 				pygame.mixer.music.play()
-			perclos.clear()
+				warn_tag = 1
+			else:
+				warn_tag = 0
 
-		cv2.putText(img, "Blinks:{0}".format(blink_counter), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
-		cv2.putText(img, "EAR:{:.2f}".format(ear), (300, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
+		if (warn_tag == 1):
+
+			cv2.putText(img,"WARNING",(0,30),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
+				#检测到音乐停止播放或采用人脸个数标记
+		if tag == 1 :
+			perclos.pop(0)
+		print(perclos)
+
+		if (warn_tag == 0):
+			cv2.putText(img, "Blinks:{0}".format(blink_counter), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
+			cv2.putText(img, "EAR:{:.2f}".format(ear), (300, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
 
 		flag = flag + 1
+
+		X.append(flag)
 		
 	cv2.imshow("Frame", img)#格式问题
 	
@@ -141,14 +167,18 @@ print ("blink=",blink_counter)
 
 print('-'*60)
 #print (cap.get(5))   #摄像头可能不能用此方法实时显示帧率
-print (flag)
+print ("flag:",flag)
 #计时结束
 time_end = time.time()
 total_time = time_end-time_start
-print('totally cost',total_time)
+print('totally cost:',total_time)
 #帧率
 print ("FPS:",flag/total_time)
-print (type(res[0]))
-print (perclos)
-print (len(perclos))
+print ("PERCLOS:",perclos)
+print ("len:",len(perclos))
+
+plt.title("blink_counter")
+plt.plot(X,Y,label="blink:"+str(blink_counter))
+plt.legend(loc = "upper left")
+plt.show()
 
